@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>PC Problem Classificator</title>
+  </head>
+  <body>
+    <div>
+      <div>
+        <a href="#" id="admin-btn">Admin Page</a>
+        <a href="#" id="user-btn">User Page</a>
+      </div>
+
+      <div
+        id="user-page"
+        style="
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-direction: column;
+        "
+      >
+        <div>
+          <h3>Selamat datang di software diagnosis kerusakan PC!</h3>
+        </div>
+        <div style="display: flex; justify-content: center">
+          <div>
+            Ketik gejala-gejala kerusakan PC anda (misal
+            <strong>layar tidak menyala</strong>), bisa lebih dari satu:
+          </div>
+        </div>
+        <div style="display: flex; margin-top: 1em">
+          <div>
+            <input
+              type="text"
+              placeholder="Ketik di sini..."
+              id="symptom-input"
+            />
+          </div>
+          <div>
+            <button id="add-symptom">Add</button>
+          </div>
+        </div>
+
+        <div id="user-symptom-list"></div>
+
+        <div id="classification-view" style="display: none">
+          <hr />
+          <h5>Kemungkinan masalah PC anda terletak pada:</h5>
+        </div>
+      </div>
+
+      <div
+        id="admin-page"
+        style="
+          display: none;
+          justify-content: center;
+          align-items: center;
+          flex-direction: column;
+        "
+      >
+        <h3>Halaman Admin</h3>
+
+        <div>
+          Input data symptom, relevansi symptom dengan klasifikasi masalah, dll.
+        </div>
+
+        <div>
+          <hr style="width: 100vh" />
+        </div>
+
+        <div id="symptom-table"></div>
+      </div>
+    </div>
+  </body>
+  <script>
+    let adminSymptoms = [];
+    let classifications = [];
+    let symptoms = [];
+
+    (async () => {
+      console.log("starty");
+
+      try {
+        const respSymptoms = await fetch(`http://localhost:5000/symptoms`);
+
+        if (respSymptoms.status !== 200) throw await respSymptoms.text();
+
+        const respClassifications = await fetch(
+          `http://localhost:5000/classifications`
+        );
+
+        if (respClassifications.status !== 200)
+          throw await respClassifications.text();
+
+        const adminSymptomsList = await respSymptoms.json();
+        const adminClassificationList = await respClassifications.json();
+
+        adminSymptoms = adminSymptomsList;
+        classifications = adminClassificationList;
+
+        document.getElementById("symptom-table").innerHTML = `
+          <table border="1">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Gejala</th>
+                ${classifications
+                  .map((classification) => `<th>${classification.name}</th>`)
+                  .join("")}
+              </tr>    
+            </thead>
+            <tbody>
+              ${adminSymptoms
+                .map(
+                  (symptom, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td>${symptom.name}</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                    
+                </tr>  
+              `
+                )
+                .join("")}  
+            </tbody>
+          </table>`;
+      } catch (e) {
+        console.log("[Error]", e);
+      }
+
+      console.log("endy");
+    })();
+
+    const render = () => {
+      document.getElementById("user-symptom-list").innerHTML = `<ol>${symptoms
+        .map(
+          (symptom) =>
+            `
+            <li>
+              <div>
+                <div>${symptom}</div>` +
+            `
+                            <div>
+                              <pre>
+                                <small>
+                                  <strong>
+            DEBUG: ${JSON.stringify(symptom.split(" "))}
+                                  </strong>
+                                </small>
+                              </pre>
+                            </div>` +
+            `
+              </div>
+            </li>
+        `
+        )
+        .join("")}</ol>`;
+
+      if (symptoms.length > 0) {
+        document.getElementById("classification-view").style.display = "block";
+      } else {
+        document.getElementById("classification-view").style.display = "none";
+      }
+    };
+
+    document.getElementById("add-symptom").addEventListener("click", (e) => {
+      console.log(document.getElementById("symptom-input").value);
+
+      symptoms.push(document.getElementById("symptom-input").value);
+      document.getElementById("symptom-input").value = "";
+
+      render();
+    });
+
+    document.getElementById("admin-btn").addEventListener("click", (e) => {
+      document.getElementById("user-page").style.display = "none";
+      document.getElementById("admin-page").style.display = "flex";
+    });
+
+    document.getElementById("user-btn").addEventListener("click", (e) => {
+      document.getElementById("admin-page").style.display = "none";
+      document.getElementById("user-page").style.display = "flex";
+    });
+  </script>
+</html>

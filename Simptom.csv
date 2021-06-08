@@ -1,0 +1,21 @@
+No.,Simptom,Monitor,RAM,PSU,Processor,Hard Disk,GPU,Motherboard
+1,Monitor tidak menyala,5,4,1,1,1,4,1
+2,Bau gosong,1,1,5,2,1,2,2
+3,Komputer tidak hidup,4,5,3,1,1,2,3
+4,Komputer hidup tapi tidak boot,1,4,1,1,5,1,1
+5,Komputer booting ke safe mode,1,1,1,1,5,1,1
+6,Blue Screen,1,5,1,1,4,1,1
+7,RAM tidak terdeteksi,1,5,1,1,1,1,2
+8,Tampilan rusak dan hang,1,1,1,1,1,5,1
+9,Komputer sering hang,1,5,2,5,5,1,1
+10,Tampilan layar bergaris,1,1,1,1,1,5,1
+11,Processor tidak terdeteksi,1,1,1,4,1,1,5
+12,Tampilan monitor gelap,5,1,1,1,1,5,1
+13,"Muncul tulisan ""Operating system not found""",1,1,1,1,5,1,1
+14,Hard Disk bad sector,1,1,1,1,5,1,1
+15,Masalah BIOS,1,1,1,1,1,1,5
+16,CPU mengeluarkan bunyi beep,4,5,1,4,1,4,1
+17,"Muncul tulisan ""Memory test fail""",1,5,1,1,1,1,1
+18,"Lampu power tidak menyala, kipas menyala",1,1,5,5,1,1,1
+19,"Lampu power tidak menyala, kipas tidak menyala",1,1,5,1,1,1,1
+20,"Muncul tulisan ""Hard disk error/failure""",1,1,1,1,5,1,1
