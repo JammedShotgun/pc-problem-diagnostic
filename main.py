@@ -3,7 +3,10 @@ from dataclasses import dataclass
 
 from flask import Flask, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
+from flask import request
 from flask_cors import CORS
+import json
+import pprint
 
 app = Flask(__name__)
 CORS(app)
@@ -42,9 +45,9 @@ class SymptomClassification(db.Model):
     value: int
 
     id = db.Column(db.Integer, primary_key=True)
-    symptom_id = db.Column(db.Integer, primary_key=True)
-    classification_id = db.Column(db.Integer, primary_key=True)
-    value = db.Column(db.Integer, primary_key=True)
+    symptom_id = db.Column(db.Integer)
+    classification_id = db.Column(db.Integer)
+    value = db.Column(db.Integer)
 
 
 db.create_all()
@@ -132,7 +135,7 @@ with open('Simptom.csv') as csv_file:
             print('Symptom found', found_symptom)
 
     # Test search classification
-    for classification_name in ['monitor', 'ram', 'psu', 'processor', 'hdd', 'gpu', 'mboard']:
+    for classification_name in ['monitor', 'ram', 'psu', 'proc', 'hdd', 'gpu', 'mboard']:
         found_classification = Classification.query.filter_by(
             name=classification_name).first()
 
@@ -142,6 +145,35 @@ with open('Simptom.csv') as csv_file:
             db.session.commit()
         else:
             print('Classification found', found_classification)
+
+    # Search for each classification ID for SymptomClassification
+    for classification_name in ['monitor', 'ram', 'psu', 'proc', 'hdd', 'gpu', 'mboard']:
+        found_classification = Classification.query.filter_by(
+            name=classification_name).first()
+
+        if found_classification is not None:
+            for symptom in symptoms:
+                found_symptom = Symptom.query.filter_by(
+                    name=symptom['symptom']).first()
+
+                if found_symptom is not None:
+                    found_symptom_classifications = SymptomClassification.query.filter_by(
+                        classification_id=found_classification.id, symptom_id=found_symptom.id).first()
+
+                    if found_symptom_classifications is not None:
+                        print('Found symptom classification for',
+                              classification_name, found_classification.id, found_symptom_classifications)
+                    else:
+                        print('Symptom classifiaction not found. Creating... ')
+                        db.session.add(SymptomClassification(
+                            symptom_id=found_symptom.id, classification_id=found_classification.id, value=symptom[classification_name]))
+                        db.session.commit()
+
+                else:
+                    print('Symptom', symptom['symptom'], 'not found')
+
+        else:
+            print('Classification not found.', classification_name)
 
 
 # CSV init
@@ -170,3 +202,65 @@ def all_smptoms():
 @app.route('/classifications')
 def all_classifications():
     return jsonify(Classification.query.all())
+
+
+@app.route('/calculate-tfidf')
+def calculate_tfidf():
+    args_str = request.args.get('args')
+    args_json = []
+
+    try:
+        arr_of_problems = json.loads(args_str)
+
+        for problem in arr_of_problems:
+            args_json.append(problem.split(' '))
+
+    except:
+        print('Error loading JSON')
+
+    pprint.pprint(args_json)
+
+    return jsonify({
+        'input': args_json,
+        'output': 'WIP'
+    })
+
+
+@app.route('/symptom-classifications-view')
+def all_classifications_view():
+    classifications = Classification.query.all()
+    symptoms = Symptom.query.all()
+
+    symptom_classifications_view = []
+
+    for symptom in symptoms:
+        print('Symptom', symptom)
+        found_symptom_classifications = SymptomClassification.query.filter_by(
+            symptom_id=symptom.id).all()
+
+        symptom_classification_view = []
+
+        for symptom_classification in found_symptom_classifications:
+            found_classification = None
+            found_symptom = None
+
+            for classification_i in classifications:
+                if classification_i.id == symptom_classification.classification_id:
+                    found_classification = classification_i
+
+            for symptom_i in symptoms:
+                if symptom_i.id == symptom_classification.symptom_id:
+                    found_symptom = symptom_i
+
+            symptom_classification_view.append({
+                'symptom': found_symptom,
+                'classification': found_classification,
+                'symptom_classification': symptom_classification
+            })
+
+        symptom_classifications_view.append({
+            'symptom': symptom,
+            'symptom_classifications': symptom_classification_view
+        })
+
+    return jsonify(symptom_classifications_view)

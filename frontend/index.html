@@ -43,6 +43,8 @@
 
         <div id="user-symptom-list"></div>
 
+        <button id="get-diagnosis" style="display: none">Proses Hasil</button>
+
         <div id="classification-view" style="display: none">
           <hr />
           <h5>Kemungkinan masalah PC anda terletak pada:</h5>
@@ -68,14 +70,33 @@
           <hr style="width: 100vh" />
         </div>
 
-        <div id="symptom-table"></div>
+        <div id="symptom-table" style="overflow: auto"></div>
       </div>
     </div>
   </body>
   <script>
+    let showRes = false;
     let adminSymptoms = [];
     let classifications = [];
     let symptoms = [];
+    let symptomClassificationView = [];
+
+    const checkColor = (v) => {
+      switch (v) {
+        case 5:
+          return "lightblue";
+        case 4:
+          return "lightgreen";
+        case 3:
+          return "orange";
+        case 2:
+          return "yellow";
+        case 1:
+          return "lightcoral";
+        default:
+          return "black";
+      }
+    };
 
     (async () => {
       console.log("starty");
@@ -92,13 +113,34 @@
         if (respClassifications.status !== 200)
           throw await respClassifications.text();
 
+        const symptomClassificationsViewResp = await fetch(
+          `http://localhost:5000/symptom-classifications-view`
+        );
+
+        if (symptomClassificationsViewResp.status !== 200)
+          throw await symptomClassificationsViewResp.text();
+
         const adminSymptomsList = await respSymptoms.json();
         const adminClassificationList = await respClassifications.json();
+        const adminSymptomClassificationViewList =
+          await symptomClassificationsViewResp.json();
 
         adminSymptoms = adminSymptomsList;
         classifications = adminClassificationList;
+        symptomClassificationView = adminSymptomClassificationViewList;
 
-        document.getElementById("symptom-table").innerHTML = `
+        console.log("Symptom classification view", symptomClassificationView);
+
+        renderAdminTable();
+      } catch (e) {
+        console.log("[Error]", e);
+      }
+
+      console.log("endy");
+    })();
+
+    const renderAdminTable = () => {
+      document.getElementById("symptom-table").innerHTML = `
           <table border="1">
             <thead>
               <tr>
@@ -107,7 +149,7 @@
                 ${classifications
                   .map((classification) => `<th>${classification.name}</th>`)
                   .join("")}
-              </tr>    
+              </tr>
             </thead>
             <tbody>
               ${adminSymptoms
@@ -115,27 +157,58 @@
                   (symptom, i) => `
                 <tr>
                   <td>${i + 1}</td>
-                  <td>${symptom.name}</td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                    
-                </tr>  
-              `
+                  <td>
+                    <input value="${symptom.name}">
+                    </input>
+                  </td>
+                  ${classifications
+                    .map((classification) => {
+                      const foundValue =
+                        symptomClassificationView
+                          ?.find(
+                            (symptomClassificationView) =>
+                              symptomClassificationView?.symptom?.id ===
+                              symptom?.id
+                          )
+                          ?.symptom_classifications?.find(
+                            (symptomClassification) =>
+                              symptomClassification?.classification?.id ===
+                              classification?.id
+                          )?.symptom_classification?.value ?? 0;
+
+                      return `<td style="background-color:${checkColor(
+                        foundValue
+                      )}">
+                        <div>
+                          <input style="max-width:1em" value="${foundValue}" ></input>
+                        </div>
+                      </td>`;
+                    })
+                    .join("")}
+                </tr>`
                 )
-                .join("")}  
+                .join("")}
             </tbody>
           </table>`;
-      } catch (e) {
-        console.log("[Error]", e);
-      }
+    };
 
-      console.log("endy");
-    })();
+    document
+      .getElementById("get-diagnosis")
+      .addEventListener("click", async (e) => {
+        showRes = true;
+
+        const resp = await fetch(
+          `http://localhost:5000/calculate-tfidf?args=${encodeURI(
+            JSON.stringify(symptoms)
+          )}`
+        );
+
+        if (resp.status === 200) {
+          alert(JSON.stringify(await resp.json()));
+        }
+
+        render();
+      });
 
     const render = () => {
       document.getElementById("user-symptom-list").innerHTML = `<ol>${symptoms
@@ -147,13 +220,12 @@
                 <div>${symptom}</div>` +
             `
                             <div>
-                              <pre>
                                 <small>
                                   <strong>
             DEBUG: ${JSON.stringify(symptom.split(" "))}
                                   </strong>
                                 </small>
-                              </pre>
+                              
                             </div>` +
             `
               </div>
@@ -163,10 +235,18 @@
         .join("")}</ol>`;
 
       if (symptoms.length > 0) {
+        document.getElementById("get-diagnosis").style.display = "block";
+      } else {
+        document.getElementById("get-diagnosis").style.display = "none";
+      }
+
+      if (showRes > 0) {
         document.getElementById("classification-view").style.display = "block";
       } else {
         document.getElementById("classification-view").style.display = "none";
       }
+
+      renderAdminTable();
     };
 
     document.getElementById("add-symptom").addEventListener("click", (e) => {
