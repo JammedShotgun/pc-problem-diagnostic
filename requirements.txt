@@ -8,7 +8,9 @@ itsdangerous==2.0.1
 Jinja2==3.0.1
 MarkupSafe==2.0.1
 pycodestyle==2.7.0
+pydantic==1.8.2
 six==1.16.0
 SQLAlchemy==1.4.17
 toml==0.10.2
+typing-extensions==3.10.0.2
 Werkzeug==2.0.1
