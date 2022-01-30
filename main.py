@@ -251,6 +251,8 @@ def diagnose():
         saw_result_classifications.append(
             SawResult(classification=classification))
 
+    sorted_symptoms = []
+
     for symptom_frequency in new_symptom_frequencies:
         print(symptom_frequency.symptom.name,
               f'({symptom_frequency.relevancy_percentage}% relevancy)', ':')
