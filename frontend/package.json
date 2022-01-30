@@ -8,6 +8,7 @@
     "start": "sirv public --no-clear",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "build-tailwind": "rm -rf src/tailwind.css && postcss tailwind.css -o src/tailwind.css",
+    "build-tailwind-win": "postcss tailwind.css -o src/tailwind.css",
     "prod": "rm -rf src/tailwind.css && NODE_ENV=production postcss tailwind.css -o src/tailwind.css && npm run build"
   },
   "devDependencies": {
