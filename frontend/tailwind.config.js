@@ -1,6 +1,6 @@
 module.exports = {
-  purge: ["./src/**/*.svelte"],
-  darkMode: false, // or 'media' or 'class'
+  content: ["./src/**/*.svelte"],
+  media: false, // or 'media' or 'class'
   theme: {
     extend: {},
   },
@@ -8,4 +8,5 @@ module.exports = {
     extend: {},
   },
   plugins: [],
+  safelist: process.env.NODE_ENV === "development" ? [{ pattern: /.*/ }] : [],
 };

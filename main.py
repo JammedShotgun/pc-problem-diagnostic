@@ -170,11 +170,7 @@ class DiagnosticResult(BaseModel):
     saw_result: List[SawResult] = []
 
 
-@app.route('/diagnose')
-def diagnose():
-    diagnostic_data = get_symptoms_data()
-
-    inputs = json.loads(request.args.get('input'))
+def get_symptom_frequencies() -> List[SymptomFrequency]:
 
     symptom_frequencies: List[SymptomFrequency] = []
 
@@ -206,29 +202,18 @@ def diagnose():
         symptom_frequencies.append(SymptomFrequency(
             symptom=symptom, symptom_classifications=symptom_classifications))
 
-    for input in inputs:
-        split_input: List[str] = input.split(' ')
+    return symptom_frequencies
 
-        for word in split_input:
-            for symptom in diagnostic_data.symptoms:
-                count_tf = 0
-                split_symptom = symptom.name.split(' ')
 
-                for symptom_term in split_symptom:
-                    if word.lower() in symptom_term.lower():
-                        count_tf += 1
-
-                # add to symptom_frequencies
-                for symptom_frequency in symptom_frequencies:
-                    if symptom_frequency.symptom.uuid == symptom.uuid:
-                        symptom_frequency.frequency += count_tf
-
-                print(word, 'found in', symptom.name, ':', count_tf)
-
+def diagnose(
+    symptom_frequencies: List[SymptomFrequency],
+    inputs: Any
+) -> DiagnosticResult:
     # Filter symptom frequencies. If not appear, empty
     new_symptom_frequencies: List[SymptomFrequency] = []
 
     for symptom_frequency in symptom_frequencies:
+
         if symptom_frequency.frequency is not 0:
             new_symptom_frequencies.append(symptom_frequency)
 
@@ -284,12 +269,79 @@ def diagnose():
         for saw_result in sorted_symptoms:
             print(saw_result.dict())
 
-    return jsonify(DiagnosticResult(
+    diagnostic_result = DiagnosticResult(
         diagnostic_data=diagnostic_data,
         symptom_frequencies=new_symptom_frequencies,
         inputs=inputs,
         saw_result=sorted_symptoms
-    ).dict())
+    )
+
+    return diagnostic_result
+
+
+@app.route('/diagnose')
+def diagnose_by_word():
+    symptom_frequencies = get_symptom_frequencies()
+
+    inputs = json.loads(request.args.get('input'))
+
+    for input in inputs:
+        split_input: List[str] = input.split(' ')
+
+        for word in split_input:
+            for symptom in diagnostic_data.symptoms:
+                count_tf = 0
+                split_symptom = symptom.name.split(' ')
+
+                for symptom_term in split_symptom:
+                    if word.lower() in symptom_term.lower():
+                        count_tf += 1
+
+                # add to symptom_frequencies
+                for symptom_frequency in symptom_frequencies:
+                    if symptom_frequency.symptom.uuid == symptom.uuid:
+                        symptom_frequency.frequency += count_tf
+
+                print(word, 'found in', symptom.name, ':', count_tf)
+
+    for symptom_frequency in symptom_frequencies:
+        print('[SYM FREQ]', symptom_frequency.symptom.name,
+              symptom_frequency.frequency)
+
+    diagnostic_result = diagnose(
+        symptom_frequencies,
+        inputs
+    )
+
+    return jsonify(diagnostic_result.dict())
+
+
+@app.post('/diagnose-by-check')
+def diagnose_by_check():
+    symptom_frequencies = get_symptom_frequencies()
+
+    checks = request.json
+    print(checks)
+
+    # If symptom name checks, set to 1
+    for sf in symptom_frequencies:
+        for c in checks:
+            if sf.symptom.name == c:
+                sf.frequency = 1
+
+    diagnostic_result = diagnose(
+        symptom_frequencies,
+        None
+    )
+
+    return jsonify(diagnostic_result.dict())
+
+
+@app.route('/symptoms')
+def symptoms_get():
+    return jsonify(
+        get_symptoms_data().dict()
+    )
 
 
 @app.route('/')
